@@ -1,239 +1,3 @@
-# WordPress Docker Local Development Environment (English)
-
-This project provides a Docker Compose setup to run a WordPress local development environment easily and portably.
-
-## ✨ Key Features
-
-*   **Portable:** The entire environment, including WordPress files and the MariaDB database, is stored within the project folder (`./www/` for WordPress, `./data/` for the database). This makes it easy to create backups, share the environment, or move it between different machines.
-*   **Isolated:** Uses Docker to ensure the development environment does not interfere with other local or system configurations.
-*   **Easy to Use:** Start all services with a simple command (`docker compose up -d`) and stop them with (`docker compose down`).
-*   **phpMyAdmin Included:** Easily access the database through phpMyAdmin for visual management.
-*   **Pre-configured:** A ready-to-use WordPress environment with a basic setup.
-
-## 📋 Prerequisites
-
-Ensure you have installed:
-*   [Docker](https://www.docker.com/get-started)
-*   [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop)
-
-## 📁 Project Structure
-
-*   `docker-compose.yml`: Main Docker Compose configuration file that defines the services (WordPress, MariaDB, phpMyAdmin).
-*   `./data/`: Contains the MariaDB database files. This folder is created by Docker when starting the services and is ignored by Git thanks to the `.gitignore` file.
-*   `./www/`: Contains WordPress core files, themes, plugins, and uploaded files. This folder is created by Docker and is also ignored by Git.
-*   `./apache-config.conf`: Additional configuration file for Apache (used by WordPress and phpMyAdmin containers, e.g., for `ServerName`).
-*   `env.sample`: Commented template of the variables you can override. It is versioned, and Docker Compose never reads it — copy it to `.env` to use it.
-*   `.env`: Your own values, if you create one. Docker Compose reads it automatically. It is ignored by Git, but it does travel inside the project folder when you hand that folder over.
-*   `.gitignore`: Specifies files and folders that Git should ignore (like `./data/`, `./www/` and `.env`).
-
-## 🚀 Usage
-
-1.  **Clone the Repository:**
-    The simplest way is to clone the repository. This will create a new directory named `docker-wordpress` with the project files:
-    ```bash
-    git clone https://github.com/raulfg/docker-wordpress.git
-    cd docker-wordpress
-    ```
-
-    **Alternative: Clone into a specific folder**
-    If you prefer to name your project folder differently or clone into an existing directory:
-    a. Create your desired project folder (e.g., `my-wordpress-project`) and navigate into it:
-       ```bash
-       mkdir my-wordpress-project
-       cd my-wordpress-project
-       ```
-    b. Then, clone the repository content directly into this folder using a `.` at the end of the command:
-       ```bash
-       git clone https://github.com/raulfg/docker-wordpress.git .
-       ```
-
-    If you are not cloning, simply ensure you have `docker-compose.yml` and `apache-config.conf` in your working directory.
-
-2.  **Start the Services:**
-    Navigate to the project's root directory (where the `docker-compose.yml` file is located) and run:
-    ```bash
-    docker compose up -d
-    ```
-    This will download the necessary Docker images (if it's the first time) and create and start the containers in the background (`-d`).
-    If you prefer to see the container logs directly in your terminal (foreground mode), you can omit the `-d` flag: `docker compose up`. To stop the services when running in foreground mode, press `Ctrl+C` in the terminal. Note that this only stops the containers; to remove them, you'll still need to run `docker compose down` afterwards.
-
-3.  **Access the Services:**
-    *   **WordPress:** Open your browser and go to `http://localhost` (or `http://localhost:80`).
-        *   The first time, you will be guided through the WordPress installation process.
-        *   The values below are the **defaults**. If you set any of them in a `.env` file, use yours instead — see [Variables you can override at startup](#variables-you-can-override-at-startup).
-            *   Database Name: `wordpress`
-            *   User: `wordpress`
-            *   Password: `wordpress`
-            *   Database Host: `db` (the name of the database service in `docker-compose.yml`)
-            *   Table Prefix: `dockwp_`
-    *   **phpMyAdmin:** Open your browser and go to `http://localhost:8080`.
-        *   Server: `db`
-        *   User: `root`
-        *   Password: `password` (the default; it is whatever `DB_ROOT_PASSWORD` is set to)
-
-4.  **Stop and Remove the Services:**
-    To stop and remove all containers, networks, and volumes (not the locally mapped ones in `./data/` and `./www/`) associated with this project, run in the same directory:
-    ```bash
-    docker compose down
-    ```
-    This command is used whether you started the services with `docker compose up -d` (detached mode) or if you ran them in foreground mode and stopped them with `Ctrl+C`. It ensures a clean shutdown and removal of the Docker resources created by this project. The data in `./data/` (database) and `./www/` (WordPress files) will persist on your local system.
-
-## 🔧 Customization
-
-You can customize the configuration by editing the `docker-compose.yml` file:
-
-*   **WordPress/MariaDB/phpMyAdmin Versions:** Change the image tags (e.g., `wordpress:latest`, `mariadb:11`, `phpmyadmin`).
-
-### Variables you can override at startup
-
-The ports, the table prefix and the database credentials are all parameterized, so you do not have to edit `docker-compose.yml` to change them. Every one of them falls back to a default, which is why a bare `docker compose up` always works with no setup at all:
-
-| Variable | Default | What it controls |
-| --- | --- | --- |
-| `WP_PORT` | `80` | Port where WordPress is published |
-| `PMA_PORT` | `8080` | Port where phpMyAdmin is published |
-| `WP_PREFIX` | `dockwp_` | WordPress database table prefix |
-| `DB_NAME` | `wordpress` | Database name |
-| `DB_USER` | `wordpress` | Database user WordPress connects with |
-| `DB_PASSWORD` | `wordpress` | Password for that user |
-| `DB_ROOT_PASSWORD` | `password` | MariaDB root password, also used to log into phpMyAdmin |
-
-Each credential is declared once and reused by every service that needs it, so the `db`, `wordpress` and `phpmyadmin` services can no longer drift apart. Changing the password is one edit, not three.
-
-A commented template listing all of them lives in `env.sample`, in English and Spanish. Copy it to start from it:
-
-```bash
-cp env.sample .env
-```
-
-That file is versioned and harmless, because **Docker Compose never reads it**. Compose only picks up a file named exactly `.env`, so nothing you write in `env.sample` has any effect until you copy it. That is also why only `.env` is listed in `.gitignore`: the template is meant to be shared, your actual values are not.
-
-**For a single run**, put them in front of the command:
-
-```bash
-WP_PORT=8081 PMA_PORT=8082 docker compose up -d
-```
-
-This is the usual fix when another project is already publishing port `80`.
-
-**For a whole terminal session**, export them once:
-
-```bash
-export WP_PORT=8081
-docker compose up -d
-```
-
-**Permanently, for one project**, create a `.env` file next to `docker-compose.yml`. Docker Compose reads it automatically, so whoever uses that folder keeps typing just `docker compose up`:
-
-```ini
-# .env
-WP_PORT=8081
-WP_PREFIX=acme7x_
-```
-
-That last option is the right one when you are preparing a folder for someone else: you set the values once, and they never have to pass a variable or edit a file.
-
-The three methods combine, and the more specific one wins: a variable placed in front of the command overrides the same variable in `.env`, which in turn overrides the default. So you can keep a permanent `.env` for a project and still start it on a different port just once, without touching the file.
-
-> ⚠️ **`WP_PREFIX` has to be decided before the first installation.** The prefix is not frozen into `wp-config.php` — that file reads the variable at runtime — but the database tables are physically named `<prefix>posts`, `<prefix>options` and so on, and the prefix is also embedded in keys such as `<prefix>user_roles` and `<prefix>capabilities`. Changing it on a site that is already installed points WordPress at tables that do not exist. Changing it afterwards means renaming every table and patching those keys by hand.
-
-> ⚠️ **`WP_PORT` is best decided before installing too.** WordPress stores its own address in the database during installation, in the `siteurl` and `home` options. Install on port `80` and later start with `WP_PORT=8081`, and the site will keep redirecting you back to `http://localhost`. It is not broken, just pointing at the old address. Either pick the port before installing, or fix the two options afterwards:
->
-> ```bash
-> docker compose exec db mariadb -uwordpress -pwordpress wordpress \
->   -e "UPDATE dockwp_options SET option_value='http://localhost:8081' WHERE option_name IN ('siteurl','home');"
-> ```
-
-> ⚠️ **`DB_NAME`, `DB_USER`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` also have to be decided before the first start.** MariaDB only reads them while it initializes an empty `./data/`. Once that directory exists, the database, the user and the passwords are already stored inside it, and changing the variables only changes what WordPress *tries* to use. The result is a site that answers `Error establishing a database connection` with HTTP 500, while the database still holds the original user. To change credentials on a running project, change them inside the database (or in phpMyAdmin) and keep the variables in sync, or start over from an empty `./data/`.
-
-> ⚠️ **Coming from an older copy of this project?** Earlier versions used `mysql:5.7`. MariaDB cannot read a data directory created by MySQL, so an existing `./data/` will not start. Dump the database with the old stack first, then start from an empty `./data/` and import it back:
->
-> ```bash
-> docker compose exec db mysqldump -uroot -ppassword --all-databases > backup.sql
-> ```
-
-### Note on credentials and the `.env` file
-
-The defaults are generic, memorable values, and that is deliberate: this is a local environment, and simple keys keep the startup trivial. They stay as defaults inside `docker-compose.yml` so that the environment always boots with no setup.
-
-If you do set real credentials, put them in `.env`, never in `docker-compose.yml` — that way they stay out of the repository, because `.env` is listed in `.gitignore` while the compose file is versioned. Note that this keeps them out of Git, not out of the folder: `.env` still travels inside the project folder when you hand it over, which is exactly what makes a prepared folder work. It is not a secrets vault. If this environment is ever reachable from outside your own machine, treat every credential in it as public and change it.
-
----
-
-## 🪟 Notes for Windows
-
-This environment runs on Windows, and dropping the `platform:` overrides from `docker-compose.yml` actually made it more portable: Docker now picks the host architecture on its own, so the same file works on an Apple Silicon Mac and on an x86 Windows machine. Two things are worth knowing before you start.
-
-### Keep the project inside the WSL2 filesystem
-
-The database lives in `./data/`, bind-mounted into the container. When that folder sits on a Windows path such as `C:\...`, disk I/O for MariaDB has to cross from the Linux container to NTFS and becomes the bottleneck: installing WordPress and browsing the admin get noticeably slow. This is tracked in [issue #1](https://github.com/raulfg/docker-wordpress/issues/1).
-
-The fix is not in the compose file. Put the project folder inside the WSL2 distribution's own filesystem — reachable as `\\wsl$\...` from Explorer — instead of under `C:\`. Same `docker compose up`, much better I/O.
-
-If you need the project on a Windows path and the slowness is unacceptable, moving `./data/` to a Docker named volume removes the bottleneck. The cost is the portability this project is built around: the database would no longer travel inside the folder.
-
-### Line endings
-
-`.gitattributes` forces LF on checkout on every platform, and you should not override it. Git for Windows checks out CRLF by default, and a trailing carriage return ends up inside the value of every variable in `.env`: `WP_PORT=80\r` is not a valid port, and the error message will not tell you why.
-
-### Commands
-
-This README uses `cp`, which does not exist in PowerShell or CMD. Use `copy` instead:
-
-```powershell
-copy env.sample .env
-```
-
----
-
-## 🌱 From Seed to Client Project
-
-This repository is a **seed**. Its job is to hand you the newest stack every time you start a new development, which is why the images use floating tags (`wordpress:latest`, `mariadb:11`) instead of pinned versions.
-
-### Starting a new development: pull first
-
-A tag is only a name, not a promise of freshness. Docker resolves a tag against the registry **only when the image is not already in your local cache**, so `docker compose up` on its own will happily keep serving the image you pulled months ago. That is the worst of both worlds: neither reproducible like a pinned version nor current like you intended.
-
-So when you start a new development from this seed, refresh explicitly:
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-Check what you actually got with `docker compose exec wordpress php -v` and the WordPress version in the admin dashboard.
-
-The `pull_policy: always` option would automate this, and it is deliberately **not** used here. It turns every single `up` into a hard network dependency: with an unreachable registry the stack refuses to start **even when the image is already in the local cache**. Since this environment is meant to be handed over as a self-contained folder that someone starts with a bare `docker compose up`, possibly offline, failing to boot is far worse than running a slightly older image. Freshness is an explicit decision you make with `pull`, not a precondition for booting.
-
-### Becoming a client project: freeze it
-
-A client project wants the opposite of a seed: the same environment as yesterday, every day, until you decide otherwise. **The moment a copy of this repository holds real client data, freeze the environment.** Pin the images:
-
-```yaml
-db:
-  image: mariadb:11.8
-wordpress:
-  image: wordpress:php8.3-apache
-```
-
-### What an image update does and does not touch
-
-*   **It does not touch the WordPress core.** The core lives in `./www/`, and the image entrypoint copies it only when the directory contains no WordPress at all. On an existing installation nothing is copied, nothing is overwritten, and no database upgrade is triggered. The site stays on its exact version, and the client keeps updating WordPress from the admin panel as always.
-*   **It does change the PHP runtime underneath.** The files stay identical but start running on a different PHP version, which is the usual way a legacy plugin dies. So pin for the PHP version (`wordpress:php8.3-apache`) rather than for the WordPress version, which the image does not control anyway.
-*   **It does change the database.** A MariaDB minor upgrade migrates the data directory in `./data/`, and returning to an earlier minor is not supported. Take a `mysqldump` before changing the database image.
-
----
-
-## 🙏 Acknowledgements
-
-Special thanks to Oscar García ([@opobla](https://github.com/opobla)) for introducing me to the power of Docker.
-
----
-
-Enjoy your portable and easy-to-manage local WordPress development environment!
-
----
----
-
 # Entorno de Desarrollo Local de WordPress con Docker (Español)
 
 Este proyecto proporciona una configuración de Docker Compose para ejecutar un entorno de desarrollo local de WordPress de forma sencilla y portable.
@@ -466,3 +230,239 @@ Un agradecimiento especial a Oscar García ([@opobla](https://github.com/opobla)
 ---
 
 ¡Disfruta de tu entorno de desarrollo local de WordPress portable y fácil de gestionar!
+
+---
+---
+
+# WordPress Docker Local Development Environment (English)
+
+This project provides a Docker Compose setup to run a WordPress local development environment easily and portably.
+
+## ✨ Key Features
+
+*   **Portable:** The entire environment, including WordPress files and the MariaDB database, is stored within the project folder (`./www/` for WordPress, `./data/` for the database). This makes it easy to create backups, share the environment, or move it between different machines.
+*   **Isolated:** Uses Docker to ensure the development environment does not interfere with other local or system configurations.
+*   **Easy to Use:** Start all services with a simple command (`docker compose up -d`) and stop them with (`docker compose down`).
+*   **phpMyAdmin Included:** Easily access the database through phpMyAdmin for visual management.
+*   **Pre-configured:** A ready-to-use WordPress environment with a basic setup.
+
+## 📋 Prerequisites
+
+Ensure you have installed:
+*   [Docker](https://www.docker.com/get-started)
+*   [Docker Compose](https://docs.docker.com/compose/install/) (usually included with Docker Desktop)
+
+## 📁 Project Structure
+
+*   `docker-compose.yml`: Main Docker Compose configuration file that defines the services (WordPress, MariaDB, phpMyAdmin).
+*   `./data/`: Contains the MariaDB database files. This folder is created by Docker when starting the services and is ignored by Git thanks to the `.gitignore` file.
+*   `./www/`: Contains WordPress core files, themes, plugins, and uploaded files. This folder is created by Docker and is also ignored by Git.
+*   `./apache-config.conf`: Additional configuration file for Apache (used by WordPress and phpMyAdmin containers, e.g., for `ServerName`).
+*   `env.sample`: Commented template of the variables you can override. It is versioned, and Docker Compose never reads it — copy it to `.env` to use it.
+*   `.env`: Your own values, if you create one. Docker Compose reads it automatically. It is ignored by Git, but it does travel inside the project folder when you hand that folder over.
+*   `.gitignore`: Specifies files and folders that Git should ignore (like `./data/`, `./www/` and `.env`).
+
+## 🚀 Usage
+
+1.  **Clone the Repository:**
+    The simplest way is to clone the repository. This will create a new directory named `docker-wordpress` with the project files:
+    ```bash
+    git clone https://github.com/raulfg/docker-wordpress.git
+    cd docker-wordpress
+    ```
+
+    **Alternative: Clone into a specific folder**
+    If you prefer to name your project folder differently or clone into an existing directory:
+    a. Create your desired project folder (e.g., `my-wordpress-project`) and navigate into it:
+       ```bash
+       mkdir my-wordpress-project
+       cd my-wordpress-project
+       ```
+    b. Then, clone the repository content directly into this folder using a `.` at the end of the command:
+       ```bash
+       git clone https://github.com/raulfg/docker-wordpress.git .
+       ```
+
+    If you are not cloning, simply ensure you have `docker-compose.yml` and `apache-config.conf` in your working directory.
+
+2.  **Start the Services:**
+    Navigate to the project's root directory (where the `docker-compose.yml` file is located) and run:
+    ```bash
+    docker compose up -d
+    ```
+    This will download the necessary Docker images (if it's the first time) and create and start the containers in the background (`-d`).
+    If you prefer to see the container logs directly in your terminal (foreground mode), you can omit the `-d` flag: `docker compose up`. To stop the services when running in foreground mode, press `Ctrl+C` in the terminal. Note that this only stops the containers; to remove them, you'll still need to run `docker compose down` afterwards.
+
+3.  **Access the Services:**
+    *   **WordPress:** Open your browser and go to `http://localhost` (or `http://localhost:80`).
+        *   The first time, you will be guided through the WordPress installation process.
+        *   The values below are the **defaults**. If you set any of them in a `.env` file, use yours instead — see [Variables you can override at startup](#variables-you-can-override-at-startup).
+            *   Database Name: `wordpress`
+            *   User: `wordpress`
+            *   Password: `wordpress`
+            *   Database Host: `db` (the name of the database service in `docker-compose.yml`)
+            *   Table Prefix: `dockwp_`
+    *   **phpMyAdmin:** Open your browser and go to `http://localhost:8080`.
+        *   Server: `db`
+        *   User: `root`
+        *   Password: `password` (the default; it is whatever `DB_ROOT_PASSWORD` is set to)
+
+4.  **Stop and Remove the Services:**
+    To stop and remove all containers, networks, and volumes (not the locally mapped ones in `./data/` and `./www/`) associated with this project, run in the same directory:
+    ```bash
+    docker compose down
+    ```
+    This command is used whether you started the services with `docker compose up -d` (detached mode) or if you ran them in foreground mode and stopped them with `Ctrl+C`. It ensures a clean shutdown and removal of the Docker resources created by this project. The data in `./data/` (database) and `./www/` (WordPress files) will persist on your local system.
+
+## 🔧 Customization
+
+You can customize the configuration by editing the `docker-compose.yml` file:
+
+*   **WordPress/MariaDB/phpMyAdmin Versions:** Change the image tags (e.g., `wordpress:latest`, `mariadb:11`, `phpmyadmin`).
+
+### Variables you can override at startup
+
+The ports, the table prefix and the database credentials are all parameterized, so you do not have to edit `docker-compose.yml` to change them. Every one of them falls back to a default, which is why a bare `docker compose up` always works with no setup at all:
+
+| Variable | Default | What it controls |
+| --- | --- | --- |
+| `WP_PORT` | `80` | Port where WordPress is published |
+| `PMA_PORT` | `8080` | Port where phpMyAdmin is published |
+| `WP_PREFIX` | `dockwp_` | WordPress database table prefix |
+| `DB_NAME` | `wordpress` | Database name |
+| `DB_USER` | `wordpress` | Database user WordPress connects with |
+| `DB_PASSWORD` | `wordpress` | Password for that user |
+| `DB_ROOT_PASSWORD` | `password` | MariaDB root password, also used to log into phpMyAdmin |
+
+Each credential is declared once and reused by every service that needs it, so the `db`, `wordpress` and `phpmyadmin` services can no longer drift apart. Changing the password is one edit, not three.
+
+A commented template listing all of them lives in `env.sample`, in English and Spanish. Copy it to start from it:
+
+```bash
+cp env.sample .env
+```
+
+That file is versioned and harmless, because **Docker Compose never reads it**. Compose only picks up a file named exactly `.env`, so nothing you write in `env.sample` has any effect until you copy it. That is also why only `.env` is listed in `.gitignore`: the template is meant to be shared, your actual values are not.
+
+**For a single run**, put them in front of the command:
+
+```bash
+WP_PORT=8081 PMA_PORT=8082 docker compose up -d
+```
+
+This is the usual fix when another project is already publishing port `80`.
+
+**For a whole terminal session**, export them once:
+
+```bash
+export WP_PORT=8081
+docker compose up -d
+```
+
+**Permanently, for one project**, create a `.env` file next to `docker-compose.yml`. Docker Compose reads it automatically, so whoever uses that folder keeps typing just `docker compose up`:
+
+```ini
+# .env
+WP_PORT=8081
+WP_PREFIX=acme7x_
+```
+
+That last option is the right one when you are preparing a folder for someone else: you set the values once, and they never have to pass a variable or edit a file.
+
+The three methods combine, and the more specific one wins: a variable placed in front of the command overrides the same variable in `.env`, which in turn overrides the default. So you can keep a permanent `.env` for a project and still start it on a different port just once, without touching the file.
+
+> ⚠️ **`WP_PREFIX` has to be decided before the first installation.** The prefix is not frozen into `wp-config.php` — that file reads the variable at runtime — but the database tables are physically named `<prefix>posts`, `<prefix>options` and so on, and the prefix is also embedded in keys such as `<prefix>user_roles` and `<prefix>capabilities`. Changing it on a site that is already installed points WordPress at tables that do not exist. Changing it afterwards means renaming every table and patching those keys by hand.
+
+> ⚠️ **`WP_PORT` is best decided before installing too.** WordPress stores its own address in the database during installation, in the `siteurl` and `home` options. Install on port `80` and later start with `WP_PORT=8081`, and the site will keep redirecting you back to `http://localhost`. It is not broken, just pointing at the old address. Either pick the port before installing, or fix the two options afterwards:
+>
+> ```bash
+> docker compose exec db mariadb -uwordpress -pwordpress wordpress \
+>   -e "UPDATE dockwp_options SET option_value='http://localhost:8081' WHERE option_name IN ('siteurl','home');"
+> ```
+
+> ⚠️ **`DB_NAME`, `DB_USER`, `DB_PASSWORD` and `DB_ROOT_PASSWORD` also have to be decided before the first start.** MariaDB only reads them while it initializes an empty `./data/`. Once that directory exists, the database, the user and the passwords are already stored inside it, and changing the variables only changes what WordPress *tries* to use. The result is a site that answers `Error establishing a database connection` with HTTP 500, while the database still holds the original user. To change credentials on a running project, change them inside the database (or in phpMyAdmin) and keep the variables in sync, or start over from an empty `./data/`.
+
+> ⚠️ **Coming from an older copy of this project?** Earlier versions used `mysql:5.7`. MariaDB cannot read a data directory created by MySQL, so an existing `./data/` will not start. Dump the database with the old stack first, then start from an empty `./data/` and import it back:
+>
+> ```bash
+> docker compose exec db mysqldump -uroot -ppassword --all-databases > backup.sql
+> ```
+
+### Note on credentials and the `.env` file
+
+The defaults are generic, memorable values, and that is deliberate: this is a local environment, and simple keys keep the startup trivial. They stay as defaults inside `docker-compose.yml` so that the environment always boots with no setup.
+
+If you do set real credentials, put them in `.env`, never in `docker-compose.yml` — that way they stay out of the repository, because `.env` is listed in `.gitignore` while the compose file is versioned. Note that this keeps them out of Git, not out of the folder: `.env` still travels inside the project folder when you hand it over, which is exactly what makes a prepared folder work. It is not a secrets vault. If this environment is ever reachable from outside your own machine, treat every credential in it as public and change it.
+
+---
+
+## 🪟 Notes for Windows
+
+This environment runs on Windows, and dropping the `platform:` overrides from `docker-compose.yml` actually made it more portable: Docker now picks the host architecture on its own, so the same file works on an Apple Silicon Mac and on an x86 Windows machine. Two things are worth knowing before you start.
+
+### Keep the project inside the WSL2 filesystem
+
+The database lives in `./data/`, bind-mounted into the container. When that folder sits on a Windows path such as `C:\...`, disk I/O for MariaDB has to cross from the Linux container to NTFS and becomes the bottleneck: installing WordPress and browsing the admin get noticeably slow. This is tracked in [issue #1](https://github.com/raulfg/docker-wordpress/issues/1).
+
+The fix is not in the compose file. Put the project folder inside the WSL2 distribution's own filesystem — reachable as `\\wsl$\...` from Explorer — instead of under `C:\`. Same `docker compose up`, much better I/O.
+
+If you need the project on a Windows path and the slowness is unacceptable, moving `./data/` to a Docker named volume removes the bottleneck. The cost is the portability this project is built around: the database would no longer travel inside the folder.
+
+### Line endings
+
+`.gitattributes` forces LF on checkout on every platform, and you should not override it. Git for Windows checks out CRLF by default, and a trailing carriage return ends up inside the value of every variable in `.env`: `WP_PORT=80\r` is not a valid port, and the error message will not tell you why.
+
+### Commands
+
+This README uses `cp`, which does not exist in PowerShell or CMD. Use `copy` instead:
+
+```powershell
+copy env.sample .env
+```
+
+---
+
+## 🌱 From Seed to Client Project
+
+This repository is a **seed**. Its job is to hand you the newest stack every time you start a new development, which is why the images use floating tags (`wordpress:latest`, `mariadb:11`) instead of pinned versions.
+
+### Starting a new development: pull first
+
+A tag is only a name, not a promise of freshness. Docker resolves a tag against the registry **only when the image is not already in your local cache**, so `docker compose up` on its own will happily keep serving the image you pulled months ago. That is the worst of both worlds: neither reproducible like a pinned version nor current like you intended.
+
+So when you start a new development from this seed, refresh explicitly:
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+Check what you actually got with `docker compose exec wordpress php -v` and the WordPress version in the admin dashboard.
+
+The `pull_policy: always` option would automate this, and it is deliberately **not** used here. It turns every single `up` into a hard network dependency: with an unreachable registry the stack refuses to start **even when the image is already in the local cache**. Since this environment is meant to be handed over as a self-contained folder that someone starts with a bare `docker compose up`, possibly offline, failing to boot is far worse than running a slightly older image. Freshness is an explicit decision you make with `pull`, not a precondition for booting.
+
+### Becoming a client project: freeze it
+
+A client project wants the opposite of a seed: the same environment as yesterday, every day, until you decide otherwise. **The moment a copy of this repository holds real client data, freeze the environment.** Pin the images:
+
+```yaml
+db:
+  image: mariadb:11.8
+wordpress:
+  image: wordpress:php8.3-apache
+```
+
+### What an image update does and does not touch
+
+*   **It does not touch the WordPress core.** The core lives in `./www/`, and the image entrypoint copies it only when the directory contains no WordPress at all. On an existing installation nothing is copied, nothing is overwritten, and no database upgrade is triggered. The site stays on its exact version, and the client keeps updating WordPress from the admin panel as always.
+*   **It does change the PHP runtime underneath.** The files stay identical but start running on a different PHP version, which is the usual way a legacy plugin dies. So pin for the PHP version (`wordpress:php8.3-apache`) rather than for the WordPress version, which the image does not control anyway.
+*   **It does change the database.** A MariaDB minor upgrade migrates the data directory in `./data/`, and returning to an earlier minor is not supported. Take a `mysqldump` before changing the database image.
+
+---
+
+## 🙏 Acknowledgements
+
+Special thanks to Oscar García ([@opobla](https://github.com/opobla)) for introducing me to the power of Docker.
+
+---
+
+Enjoy your portable and easy-to-manage local WordPress development environment!
