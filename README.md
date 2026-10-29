@@ -1,5 +1,7 @@
 # Entorno de Desarrollo Local de WordPress con Docker (Español)
 
+**Español** · [English](#wordpress-docker-local-development-environment-english)
+
 Este proyecto proporciona una configuración de Docker Compose para ejecutar un entorno de desarrollo local de WordPress de forma sencilla y portable.
 
 ## ✨ Características Principales
@@ -235,6 +237,8 @@ Un agradecimiento especial a Oscar García ([@opobla](https://github.com/opobla)
 ---
 
 # WordPress Docker Local Development Environment (English)
+
+[Español](#entorno-de-desarrollo-local-de-wordpress-con-docker-español) · **English**
 
 This project provides a Docker Compose setup to run a WordPress local development environment easily and portably.
 
