@@ -6,3 +6,13 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# Herramientas locales de agentes
+/.atl/
+
+# Variables de entorno locales. El .env viaja dentro de la carpeta del
+# proyecto cuando la entregas, pero no debe llegar al repositorio.
+# La plantilla env.sample si se versiona.
+.env
+.env.*
+

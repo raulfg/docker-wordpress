@@ -1,0 +1,19 @@
+# Normalize text files to LF on checkout, on every platform.
+#
+# Git for Windows checks out CRLF by default. A trailing carriage return would
+# end up inside the value of every variable in .env (WP_PORT=80\r is not a valid
+# port) and inside the Apache directives of apache-config.conf, which the Linux
+# containers read verbatim.
+* text=auto eol=lf
+
+# Never normalize binaries.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.woff  binary
+*.woff2 binary
+*.zip   binary
+*.gz    binary
